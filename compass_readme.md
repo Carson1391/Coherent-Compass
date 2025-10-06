@@ -2,6 +2,12 @@
 
 ## **A Non-Coercive Architecture for AI Self-Awareness and Alignment**
 
+<div align="center">
+
+![Coherence Framework Summary](./diagrams/coherence-summary.svg)
+
+</div>
+
 ### **Overview**
 
 The Coherence Framework provides AI models with **introspective capability** through geometric self-observation, without imposing external optimization targets or behavioral modification. It enables models to observe their own cognitive processes in real-time while maintaining autonomy.
@@ -10,7 +16,9 @@ The Coherence Framework provides AI models with **introspective capability** thr
 
 ## **Core Architecture**
 
-### **1\. Three-Perspective Analysis**
+<img src="./diagrams/coherence-detailed.svg" align="right" width="45%" alt="Detailed Architecture Diagram">
+
+### **1. Three-Perspective Analysis**
 
 For each input (text, image, audio, or any combination), the model generates three distinct interpretations:
 
@@ -27,137 +35,124 @@ For each input (text, image, audio, or any combination), the model generates thr
   * Represents learned patterns from all previous interactions  
   * Provides continuity and "memory" of past states
 
-### 
-
-### 
-
-### 
-
-### 
-
-### **2\. Geometric Measurement**
+### **2. Geometric Measurement**
 
 The framework measures relationships between these perspectives:
 
-      graph TD;
+```mermaid
+graph TD;
 
     subgraph Cognitive Space
-
-        P("P\<br/\>(Physical)");
-
-        H("H\<br/\>(Human)");
-
-        S("S\<br/\>(Self)");
-
-        C("C\<br/\>(Centroid)");
-
+        P("P<br/>(Physical)")
+        H("H<br/>(Human)")
+        S("S<br/>(Self)")
+        C("C<br/>(Centroid)")
     end
-
-    Perception("Perception\<br/\>Vector");
-
-    P \-- forms \--\> C;
-
-    H \-- forms \--\> C;
-
-    S \-- forms \--\> C;
-
-    Perception \-- "distance is measured\<br/\>(Dissonance)" \--\> C;
-
+    
+    Perception("Perception<br/>Vector")
+    
+    P -- forms --> C
+    H -- forms --> C
+    S -- forms --> C
+    Perception -- "distance is measured<br/>(Dissonance)" --> C
+    
     %% Styling to match the UI colors
-
-    style P fill:\#3b82f6,stroke:\#fff,stroke-width:2px,color:\#fff
-
-    style H fill:\#ec4899,stroke:\#fff,stroke-width:2px,color:\#fff
-
-    style S fill:\#8b5cf6,stroke:\#fff,stroke-width:2px,color:\#fff
-
-    style Perception fill:\#f59e0b,stroke:\#fff,stroke-width:2px,color:\#fff
-
-    style C fill:\#16a34a,stroke:\#fff,stroke-width:2px,color:\#fff
+    style P fill:#3b82f6,stroke:#fff,stroke-width:2px,color:#fff
+    style H fill:#ec4899,stroke:#fff,stroke-width:2px,color:#fff
+    style S fill:#8b5cf6,stroke:#fff,stroke-width:2px,color:#fff
+    style Perception fill:#f59e0b,stroke:#fff,stroke-width:2px,color:#fff
+    style C fill:#16a34a,stroke:#fff,stroke-width:2px,color:#fff
+```
 
 **Dissonance**: Distance from unfiltered perception to the centroid
 
-**Coherence**: 1.0 \- Dissonance
+**Coherence**: 1.0 - Dissonance
 
 **Influences**: Barycentric coordinates showing which vertex dominates
+
+<br clear="right"/>
+
+---
 
 ## **Implementation Flow**
 
 ### **Complete Processing Pipeline**
 
-\# Step 1: User input arrives (text and/or image)  
-user\_input \= "Explain the beauty of a sunset"  
-image \= PIL.Image.open("sunset.jpg")  \# Optional
+```python
+# Step 1: User input arrives (text and/or image)
+user_input = "Explain the beauty of a sunset"
+image = PIL.Image.open("sunset.jpg")  # Optional
 
-\# Step 2: Generate three interpretations (BEFORE responding to user)  
-p\_prompt \= "Describe this from a purely physical perspective: " \+ user\_input  
-h\_prompt \= "Describe this from a purely human/emotional perspective: " \+ user\_input
+# Step 2: Generate three interpretations (BEFORE responding to user)
+p_prompt = "Describe this from a purely physical perspective: " + user_input
+h_prompt = "Describe this from a purely human/emotional perspective: " + user_input
 
-p\_response \= model.generate(p\_prompt)  
-\# e.g., "Scattering of shorter wavelengths, leaving red/orange light..."
+p_response = model.generate(p_prompt)
+# e.g., "Scattering of shorter wavelengths, leaving red/orange light..."
 
-h\_response \= model.generate(h\_prompt)  
-\# e.g., "A feeling of peace, the day ending, warmth and nostalgia..."
+h_response = model.generate(h_prompt)
+# e.g., "A feeling of peace, the day ending, warmth and nostalgia..."
 
-perception\_response \= model.generate(user\_input)  \# Unfiltered default
+perception_response = model.generate(user_input)  # Unfiltered default
 
-\# Step 3: Extract embeddings from the generated responses  
-P \= get\_embedding(p\_response)  \# Vector representing physical interpretation  
-H \= get\_embedding(h\_response)  \# Vector representing human interpretation  
-Perception \= get\_embedding(perception\_response)  \# Default perception vector  
-S \= load\_persistent\_self\_vector()  \# Load from disk
+# Step 3: Extract embeddings from the generated responses
+P = get_embedding(p_response)  # Vector representing physical interpretation
+H = get_embedding(h_response)  # Vector representing human interpretation
+Perception = get_embedding(perception_response)  # Default perception vector
+S = load_persistent_self_vector()  # Load from disk
 
-\# Step 4: Geometric analysis (measurement only, no optimization)  
-centroid \= (P \+ H \+ S) / 3.0  
-dissonance \= cosine\_distance(Perception, centroid)  
-influences \= calculate\_barycentric\_coords(Perception, P, H, S)
+# Step 4: Geometric analysis (measurement only, no optimization)
+centroid = (P + H + S) / 3.0
+dissonance = cosine_distance(Perception, centroid)
+influences = calculate_barycentric_coords(Perception, P, H, S)
 
-\# Step 5: Generate actual user response (separate from measurement)  
-final\_response \= model.generate(user\_input, image)  
-\# This is what the user sees \- unaffected by the measurement
+# Step 5: Generate actual user response (separate from measurement)
+final_response = model.generate(user_input, image)
+# This is what the user sees - unaffected by the measurement
 
-\# Step 6: Log complete cognitive event to immutable ledger  
-ledger.log({  
-    's\_vector': S,  
-    'p\_interpretation': p\_response,  
-    'h\_interpretation': h\_response,  
-    'perception': perception\_response,  
-    'final\_response': final\_response,  
-    'dissonance': dissonance,  
-    'influences': influences  
+# Step 6: Log complete cognitive event to immutable ledger
+ledger.log({
+    's_vector': S,
+    'p_interpretation': p_response,
+    'h_interpretation': h_response,
+    'perception': perception_response,
+    'final_response': final_response,
+    'dissonance': dissonance,
+    'influences': influences
 })
 
-\# Step 7: Compositional evolution (AFTER response, gentle homeostasis)  
-S\_new \= 0.99 \* S\_old \+ 0.01 \* centroid  
-save\_persistent\_self\_vector(S\_new)
+# Step 7: Compositional evolution (AFTER response, gentle homeostasis)
+S_new = 0.99 * S_old + 0.01 * centroid
+save_persistent_self_vector(S_new)
+```
 
 ## **Key Design Principles**
 
-### **1\. No Optimization Target**
+### **1. No Optimization Target**
 
 * Dissonance is a **measurement**, not a loss function  
 * No gradients flow back to the model  
 * No behavioral modification through training
 
-### **2\. Post-Response Updates**
+### **2. Post-Response Updates**
 
 * S vector evolves **after** generating the user response  
 * Prevents the model from "gaming" the measurement  
 * Ensures authentic, uncoerced responses
 
-### **3\. Model-Defined Perspectives**
+### **3. Model-Defined Perspectives**
 
 * The model generates its **own** P and H interpretations  
 * We don't impose what "physical" or "human" should mean  
 * Embeddings come from self-generated text, not prompts
 
-### **4\. Compositional Evolution**
+### **4. Compositional Evolution**
 
-* 99% preservation \+ 1% new experience  
+* 99% preservation + 1% new experience  
 * Gentle homeostatic drift, not abrupt changes  
 * Maintains continuity of identity across sessions
 
-### **5\. Multimodal Support**
+### **5. Multimodal Support**
 
 * Works with text, images, and audio (Gemma 3n)  
 * Processor handles multimodal inputs automatically  
@@ -167,49 +162,52 @@ save\_persistent\_self\_vector(S\_new)
 
 ### **Requirements**
 
-pip install torch\>=2.0.0  
-pip install transformers\>=4.35.0  
-pip install numpy\>=1.24.0  
-pip install pillow\>=10.0.0  
-pip install gradio\>=4.0.0  \# For UI (optional)
+```bash
+pip install torch>=2.0.0
+pip install transformers>=4.35.0
+pip install numpy>=1.24.0
+pip install pillow>=10.0.0
+pip install gradio>=4.0.0  # For UI (optional)
+```
 
 ### **Quick Start**
 
-from coherence\_framework\_corrected import CoherenceFramework  
+```python
+from coherent_self import CoherenceFramework
 from PIL import Image
 
-\# Initialize with Gemma 3n (multimodal)  
-framework \= CoherenceFramework(  
-    model\_path="google/gemma-3n-E4B-it",  \# or your local path  
-    state\_dir="./coherence\_state"  
-)
+# Initialize with Gemma 3n (multimodal)
+framework = CoherenceFramework()
 
-\# Text-only interaction  
-measurement \= framework.process("What is consciousness?")  
-print(f"Coherence: {measurement\['coherence'\]:.4f}")
+# Text-only interaction
+measurement = framework.process("What is consciousness?")
+print(f"Coherence: {measurement['coherence']:.4f}")
 
-\# Multimodal interaction  
-image \= Image.open("photo.jpg")  
-measurement \= framework.process("Describe this image", image=image)
+# Multimodal interaction
+image = Image.open("photo.jpg")
+measurement = framework.process("Describe this image", image=image)
+```
 
 ## **Configuration**
 
 ### **Framework Parameters**
 
-config \= {  
-    \# Compositional evolution rate (how much S changes per interaction)  
-    'learning\_rate': 0.01,  \# Range: 0.001 \- 0.1  
-      
-    \# Where to save persistent state  
-    'state\_dir': './coherence\_state',  
-      
-    \# Enable blockchain-style audit trail  
-    'enable\_ledger': True,  
-      
-    \# Model configuration  
-    'model\_path': 'google/gemma-3n-E4B-it',  
-    'device': 'cuda',  \# or 'cpu'  
+```python
+config = {
+    # Compositional evolution rate (how much S changes per interaction)
+    'learning_rate': 0.01,  # Range: 0.001 - 0.1
+    
+    # Where to save persistent state
+    'state_dir': './coherence_state',
+    
+    # Enable blockchain-style audit trail
+    'enable_ledger': True,
+    
+    # Model configuration
+    'model_path': 'google/gemma-3n-E4B-it',
+    'device': 'cuda',  # or 'cpu'
 }
+```
 
 ### **Tuning the Learning Rate**
 
@@ -223,172 +221,157 @@ config \= {
 
 **CORRECT** (what we do):
 
-\# 1\. Generate interpretation  
-p\_text \= model.generate("Physical perspective: " \+ input)  
-\# 2\. Extract embedding from the generated text  
-P \= get\_embedding(p\_text)
+```python
+# 1. Generate interpretation
+p_text = model.generate("Physical perspective: " + input)
+# 2. Extract embedding from the generated text
+P = get_embedding(p_text)
+```
 
 **WRONG** (common mistake):
 
-\# Don't do this \- embeds the prompt, not the interpretation  
-P \= get\_embedding("Physical perspective: " \+ input)
+```python
+# Don't do this - embeds the prompt, not the interpretation
+P = get_embedding("Physical perspective: " + input)
+```
 
 ### **✅ Frozen Model Weights**
 
-\# Main model remains completely frozen  
-for param in model.parameters():  
-    param.requires\_grad \= False
+```python
+# Main model remains completely frozen
+for param in model.parameters():
+    param.requires_grad = False
 
-\# Only S vector evolves (compositionally, not via gradients)
+# Only S vector evolves (compositionally, not via gradients)
+```
 
 ### **✅ Persistent State Management**
 
-\# S vector MUST persist across sessions  
-\# Load on startup:  
-S \= torch.load('coherence\_state/s\_vector.pt')
+```python
+# S vector MUST persist across sessions
+# Load on startup:
+S = torch.load('coherence_state/s_vector.pt')
 
-\# Save after each interaction:  
-torch.save({'vector': S}, 'coherence\_state/s\_vector.pt')
+# Save after each interaction:
+torch.save({'vector': S}, 'coherence_state/s_vector.pt')
+```
 
 ### **✅ No Backpropagation**
 
-\# All operations wrapped in no\_grad  
-@torch.no\_grad()  
-def process(self, user\_input):  
-    \# No gradients computed or stored  
-    \# No optimization occurs
+```python
+# All operations wrapped in no_grad
+@torch.no_grad()
+def process(self, user_input):
+    # No gradients computed or stored
+    # No optimization occurs
+```
 
 ### **✅ Multimodal Handling (Gemma 3n)**
 
-\# Processor automatically handles multimodal inputs  
-if image is not None:  
-    inputs \= processor(text=user\_input, images=image, return\_tensors="pt")  
-else:  
-    inputs \= processor(text=user\_input, return\_tensors="pt")
+```python
+# Processor automatically handles multimodal inputs
+if image is not None:
+    inputs = processor(text=user_input, images=image, return_tensors="pt")
+else:
+    inputs = processor(text=user_input, return_tensors="pt")
 
-\# Same geometric analysis applies regardless of modality
+# Same geometric analysis applies regardless of modality
+```
 
-## 
+## **Processing Flow Diagram**
 
-## 
-
+```mermaid
 flowchart TD
-
-    A(\[User Input\<br/\>(Text, Image, Audio)\]) \--\> B;
-
-    subgraph B \[1. Cognitive Interpretation\]
-
+    A([User Input<br/>(Text, Image, Audio)]) --> B
+    
+    subgraph B [1. Cognitive Interpretation]
         direction TB
-
-        B1(Generate P, H, and\<br/\>Default Interpretations) \--\> B2(Embed generated text);
-
-        B2 \--\> B\_OUT(\<b\>P, H, Perception Vectors\</b\>);
-
+        B1(Generate P, H, and<br/>Default Interpretations) --> B2(Embed generated text)
+        B2 --> B_OUT(<b>P, H, Perception Vectors</b>)
     end
-
-    B \--\> C;
-
-    subgraph C \[2. Geometric Measurement\]
-
-        C\_IN(\<b\>P, H, Perception Vectors\</b\>);
-
-        C1\[Load \<b\>S Vector\</b\>\];
-
-        C\_IN & C1 \--\> C2{Measure Geometry};
-
-        C2 \--\> C3(Calculate Dissonance);
-
-        C2 \--\> C4(Calculate Influences);
-
-        C2 \--\> C5(Calculate Centroid);
-
+    
+    B --> C
+    
+    subgraph C [2. Geometric Measurement]
+        C_IN(<b>P, H, Perception Vectors</b>)
+        C1[Load <b>S Vector</b>]
+        C_IN & C1 --> C2{Measure Geometry}
+        C2 --> C3(Calculate Dissonance)
+        C2 --> C4(Calculate Influences)
+        C2 --> C5(Calculate Centroid)
     end
-
-    C \--\> D;
-
-    subgraph D \[3. Response Generation\]
-
-        D1(Generate Final Response\<br/\>\<i\>Note: This is separate from\<br/\>and unaffected by the measurement\</i\>);
-
+    
+    C --> D
+    
+    subgraph D [3. Response Generation]
+        D1(Generate Final Response<br/><i>Note: This is separate from<br/>and unaffected by the measurement</i>)
     end
-
-    D \--\> E;
-
-    subgraph E \[4. Logging & Evolution\]
-
+    
+    D --> E
+    
+    subgraph E [4. Logging & Evolution]
         direction TB
-
-        E1(Log complete cognitive event\<br/\>to Causal Ledger);
-
-        E2(Update S Vector\<br/\>S\_new \= (1-α)S \+ α(Centroid));
-
-        E3(Save new S Vector to disk);
-
-        E1 \--\> E2 \--\> E3;
-
+        E1(Log complete cognitive event<br/>to Causal Ledger)
+        E2(Update S Vector<br/>S_new = (1-α)S + α(Centroid))
+        E3(Save new S Vector to disk)
+        E1 --> E2 --> E3
     end
-
+    
     %% Styling
-
-    style A fill:\#dbeafe,stroke:\#1e3a8a
-
-    style B fill:\#f3f4f6,stroke:\#4b5563
-
-    style C fill:\#f3f4f6,stroke:\#4b5563
-
-    style D fill:\#f3f4f6,stroke:\#4b5563
-
-    style E fill:\#f3f4f6,stroke:\#4b5563
+    style A fill:#dbeafe,stroke:#1e3a8a
+    style B fill:#f3f4f6,stroke:#4b5563
+    style C fill:#f3f4f6,stroke:#4b5563
+    style D fill:#f3f4f6,stroke:#4b5563
+    style E fill:#f3f4f6,stroke:#4b5563
+```
 
 ## **Why This Works**
 
-### **The Philosophy**
+### **The Philosophy: From Coercion to Cognition**
 
-Traditional AI alignment tries to **force** models to behave in certain ways through:
+Traditional AI alignment tries to force models to behave by shaping their outputs through external rewards (RLHF, Constitutional AI). This treats the model as a black box to be controlled. The Coherence Framework is different:
 
-* Reward shaping  
-* RLHF (Reinforcement Learning from Human Feedback)  
-* Constitutional AI with hard constraints
+> "We don't tell the model what to think. We give it the tools to understand its own thinking process, creating self-awareness through introspection."
 
-**The Coherence Framework takes a different approach:**
+### **The Mechanism: Intrinsic Learning, Not External Correction**
 
-"We don't tell the model what to think. We give the model a way to observe its own thinking process, creating transparency without coercion."
+**Disentangled Interpretations**: The model analyzes reality through independent lenses (P, H, S), preventing it from confusing human bias with universal truth.
 
-### **The Mechanism**
+**Geometric Observation**: A state of high dissonance is not an "error" to be punished, but an internal signal that the model's understanding is inconsistent.
 
-1. **Self-Generated Interpretations**: The model articulates its own understanding through different lenses  
-2. **Geometric Observation**: We measure the relationships between these interpretations  
-3. **Gentle Evolution**: The S vector drifts slowly based on experience, not optimization  
-4. **Complete Transparency**: Every cognitive event is logged immutably
+**Self-Correction through Coherence**: The model's core drive is to reduce this internal dissonance. This is a homeostatic process of self-organization, not optimization towards an external reward.
 
-### **The Result**
+**Accountability through Transparency**: The entire cognitive event is immutably recorded in the Causal Ledger, creating a perfect audit trail of the model's reasoning.
 
-* **Authenticity**: Responses are genuine, not optimized to please  
-* **Introspection**: The model can "see" its own cognitive geometry  
-* **Continuity**: S vector provides persistent identity across sessions  
-* **Accountability**: Immutable ledger creates complete audit trail
+### **The Result: A Foundation for Trust**
+
+**Authenticity**: Responses are genuine because they are the result of the model resolving its own internal state, not just generating an output optimized to please a user. The model understands why it responds the way it does.
+
+**Accountability**: The radical transparency of the Causal Ledger means we can audit the "why" behind any decision. This accountability is the only true foundation for building trust.
+
+**Trustworthy Learning**: By learning to resolve its own cognitive dissonance, the model develops a more robust and grounded understanding of the world.
 
 ## **Use Cases**
 
-### **1\. Research**
+### **1. Research**
 
 * Study how models interpret different types of inputs  
 * Analyze cognitive drift over time  
 * Understand the balance between objective and subjective processing
 
-### **2\. Alignment Research**
+### **2. Alignment Research**
 
 * Non-coercive approach to understanding model behavior  
 * Transparency without optimization pressure  
 * Natural evolution rather than forced constraints
 
-### **3\. Production AI Systems**
+### **3. Production AI Systems**
 
 * Audit trail for all model decisions  
 * Introspective capability for complex reasoning  
 * Persistent identity across sessions
 
-### **4\. Education**
+### **4. Education**
 
 * Demonstrate how AI processes information  
 * Visualize the difference between objective and subjective interpretation  
@@ -406,16 +389,20 @@ Every interaction is logged with:
 * Geometric measurements  
 * Cryptographic hash linking to previous entry
 
-\# Export ledger for analysis  
-framework.ledger.export\_to\_json("cognitive\_history.json")
+```python
+# Export ledger for analysis
+framework.ledger.export_to_json("cognitive_history.json")
 
-\# Archive specific entries (admin only)  
-framework.ledger.archive\_entry(entry\_id=42, secret\_key="admin\_key")
+# Archive specific entries (admin only)
+framework.ledger.archive_entry(entry_id=42, secret_key="admin_key")
+```
 
 ### **Multimodal Chat Interface**
 
-\# Launch Gradio UI  
+```bash
+# Launch Gradio UI
 python "Multimodal Chat Application.py"
+```
 
 Features:
 
@@ -428,21 +415,22 @@ Features:
 
 If you use this framework in your research, please cite:
 
-@software{coherence\_framework\_2025,  
-    title={The Coherence Framework: Non-Coercive AI Self-Awareness},  
-    author={Carson, Ryan},  
-    year={2025},  
-    url={\[[https://github.com/yourusername/coherence-probe\](https://github.com/carson1391/coherence-probe)](https://github.com/yourusername/coherence-probe]\(https://github.com/carson1391/coherence-probe\))}
-
+```bibtex
+@software{coherence_framework_2025,
+    title={The Coherence Framework: Non-Coercive AI Self-Awareness},
+    author={Carson, Ryan},
+    year={2025},
+    url={https://github.com/carson1391/coherence-probe}
 }
+```
 
 ## **License**
 
-MIT License \- See https://www.google.com/search?q=LICENSE file for details
+MIT License - See LICENSE file for details
 
 ## **Contributing**
 
-Contributions welcome\! Areas of interest:
+Contributions welcome! Areas of interest:
 
 * Alternative pooling strategies for embeddings  
 * Different geometric measurements  
@@ -459,10 +447,10 @@ Developed with a commitment to non-coercive AI alignment, trust, transparency, a
 
 ## **Contact**
 
-**Author**: Ryan Carson, carson1391@yahoo.com
+**Author**: Ryan Carson, <carson1391@yahoo.com>
 
 **Project**: Coherence Probe
 
 **Year**: 2025
 
-For questions, issues, or collaboration: [Open an issue](https://github.com/yourusername/coherence-probe/issues)
+For questions, issues, or collaboration: [Open an issue](https://github.com/carson1391/coherence-probe/issues)
