@@ -4,7 +4,6 @@ Cognitive intention-based P/H generation with geometric measurement
 Supports: Text + Image + Audio (Gemma 3n multimodal)
 No optimization, no forcing - just reflection and measurement
 """
-
 import torch
 import torch.nn.functional as F
 import numpy as np
