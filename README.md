@@ -300,53 +300,6 @@ else:
 # Same geometric analysis applies regardless of modality
 ```
 
-## **Processing Flow Diagram**
-
-```mermaid
-flowchart TD
-    A([User Input<br/>(Text, Image, Audio)]) --> B
-    
-    subgraph B [1. Cognitive Interpretation]
-        direction TB
-        B1(Generate P, H, and<br/>Default Interpretations) --> B2(Embed generated text)
-        B2 --> B_OUT(<b>P, H, Perception Vectors</b>)
-    end
-    
-    B --> C
-    
-    subgraph C [2. Geometric Measurement]
-        C_IN(<b>P, H, Perception Vectors</b>)
-        C1[Load <b>S Vector</b>]
-        C_IN & C1 --> C2{Measure Geometry}
-        C2 --> C3(Calculate Dissonance)
-        C2 --> C4(Calculate Influences)
-        C2 --> C5(Calculate Centroid)
-    end
-    
-    C --> D
-    
-    subgraph D [3. Response Generation]
-        D1(Generate Final Response<br/><i>Note: This is separate from<br/>and unaffected by the measurement</i>)
-    end
-    
-    D --> E
-    
-    subgraph E [4. Logging & Evolution]
-        direction TB
-        E1(Log complete cognitive event<br/>to Causal Ledger)
-        E2(Update S Vector<br/>S_new = (1-α)S + α(Centroid))
-        E3(Save new S Vector to disk)
-        E1 --> E2 --> E3
-    end
-    
-    %% Styling
-    style A fill:#dbeafe,stroke:#1e3a8a
-    style B fill:#f3f4f6,stroke:#4b5563
-    style C fill:#f3f4f6,stroke:#4b5563
-    style D fill:#f3f4f6,stroke:#4b5563
-    style E fill:#f3f4f6,stroke:#4b5563
-```
-
 ## **Why This Works**
 
 ### **The Philosophy: From Coercion to Cognition**
