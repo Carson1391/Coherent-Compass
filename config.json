@@ -1,5 +1,5 @@
 {
-  "model_path": "C:/Users/carso/Desktop/modelspace/gemma-3n-E4B-it",
+  "model_path": "C:/Users/gemma-3n-E4B-it",
   "state_dir": "./coherence_state",
   "admin_secret_key": "coherence_admin_2024"
 }
