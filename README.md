@@ -5,7 +5,7 @@
 
 ## **Overview**
 
-The Coherent Compass provides AI models with **introspective capability** through geometric self-observation, without imposing external optimization targets or behavioral modification. It enables models to observe their own cognitive processes in real-time while maintaining autonomy.
+The future of AI alignment isn't about writing better rules; it's about building better tools for introspection. The Coherent Compass is a non-coercive architecture that moves beyond external control, giving models the ability to observe their own geometric thought process in real-time. This is the foundation for an AI that is not just capable, but authentic and accountable.
 
 The Sincere Answer (The "Why")
 
