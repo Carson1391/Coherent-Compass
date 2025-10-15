@@ -4,6 +4,7 @@ Cognitive intention-based P/H generation with geometric measurement
 Supports: Text + Image + Audio (Gemma 3n multimodal)
 No optimization, no forcing - just reflection and measurement
 """
+
 import torch
 import torch.nn.functional as F
 import numpy as np
@@ -47,7 +48,15 @@ class CoherenceFramework:
     Main framework - measures geometric relationships between
     model's intentional interpretations
     """
-    def __init__(self, model_path: str, state_dir: str = "./coherence_state"):
+    def __init__(self, config_path: str = "config.json"):
+        # Load configuration from JSON file
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+        
+        model_path = config['model_path']
+        state_dir = config['state_dir']
+        admin_key = config['admin_secret_key']
+
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         
         print(f"Loading model from {model_path}...\n")
@@ -63,7 +72,7 @@ class CoherenceFramework:
         self.processor = AutoProcessor.from_pretrained(
             model_path, 
             trust_remote_code=True,
-            local_files_only=True  # Don't download - use local processor only
+            local_files_only=True
         )
         
         # Freeze model
@@ -85,17 +94,18 @@ class CoherenceFramework:
         state_path = Path(state_dir)
         state_path.mkdir(parents=True, exist_ok=True)
         self.s_vector = PersistentSelf(state_path / "s_vector.pt", hidden_dim)
-        # Move S to GPU once and keep it there
+
         if self.device == "cuda":
             self.s_vector.vector = self.s_vector.vector.to(self.device)
         
-        # Initialize ledger (using new CausalLedger)
-        self.ledger = CausalLedger(state_path / "coherence_ledger.db")
+        # Initialize ledger with the admin key from config
+        self.ledger = CausalLedger(state_path / "coherence_ledger.db", admin_key=admin_key)
         
         self.learning_rate = 0.01
     
     def generate_interpretation(self, prompt: str, image: Optional[Image.Image] = None, 
-                              audio: Optional[str] = None, max_tokens: int = 100) -> str:
+                              audio: Optional[str] = None, max_tokens: int = 200, 
+                              max_new_tokens: int = 200):
         """
         Generate model's interpretation through a specific cognitive lens.
         
@@ -135,6 +145,7 @@ class CoherenceFramework:
                 **inputs,
                 max_new_tokens=max_tokens,
                 do_sample=False,
+                use_cache=True,  # Enable KV cache
                 pad_token_id=self.processor.tokenizer.eos_token_id,
                 eos_token_id=self.processor.tokenizer.eos_token_id
             )
@@ -205,15 +216,119 @@ class CoherenceFramework:
         print(f"[DEBUG] Embedding shape: {last_token.shape}")
         return last_token  # [hidden_dim]
     
+    def generate_batch_interpretations(self, prompts: list, image: Optional[Image.Image] = None,
+                                      audio: Optional[str] = None, max_tokens: int = 50) -> list:
+        """
+        Generate multiple interpretations in a single batched forward pass.
+        
+        Args:
+            prompts: List of prompt strings
+            image: Optional PIL Image (shared across all prompts)
+            audio: Optional audio file path (shared across all prompts)
+            max_tokens: Max tokens per interpretation
+            
+        Returns: List of generated interpretations (one per prompt)
+        """
+        # Build messages for each prompt (all share same image/audio if provided)
+        all_messages = []
+        for prompt in prompts:
+            content = [{"type": "text", "text": prompt}]
+            if image is not None:
+                content.insert(0, {"type": "image", "image": image})
+            if audio is not None:
+                content.insert(0, {"type": "audio", "audio": audio})
+            all_messages.append([{"role": "user", "content": content}])
+        
+        # Process all messages in batch
+        batch_inputs = self.processor.apply_chat_template(
+            all_messages,
+            add_generation_prompt=True,
+            tokenize=True,
+            return_dict=True,
+            return_tensors="pt",
+            padding=True  # Critical for batching
+        )
+        
+        batch_inputs = batch_inputs.to(self.device)
+        
+        # Single batched generation (GPU parallelizes internally)
+        with torch.inference_mode():
+            outputs = self.model.generate(
+                **batch_inputs,
+                max_new_tokens=max_tokens,
+                do_sample=False,
+                use_cache=True,
+                pad_token_id=self.processor.tokenizer.eos_token_id,
+                eos_token_id=self.processor.tokenizer.eos_token_id
+            )
+        
+        # Decode each output
+        interpretations = []
+        for i, output in enumerate(outputs):
+            # Find where the prompt ends for this sample
+            input_len = batch_inputs['input_ids'][i].shape[0]
+            # Decode only the generated part
+            text = self.processor.decode(output[input_len:], skip_special_tokens=True)
+            interpretations.append(text.strip())
+        
+        return interpretations
+    
+    def get_batch_embeddings(self, texts: list) -> list:
+        """
+        Extract embeddings for multiple texts in a single batched forward pass.
+        
+        Args:
+            texts: List of text strings
+            
+        Returns: List of embedding tensors (one per text)
+        """
+        # Build messages for all texts
+        all_messages = []
+        for text in texts:
+            all_messages.append([{"role": "user", "content": [{"type": "text", "text": text}]}])
+        
+        # Process batch
+        batch_inputs = self.processor.apply_chat_template(
+            all_messages,
+            add_generation_prompt=False,
+            tokenize=True,
+            return_dict=True,
+            return_tensors="pt",
+            padding=True
+        ).to(self.device)
+        
+        with torch.inference_mode():
+            outputs = self.model(**batch_inputs, output_hidden_states=True)
+        
+        hidden_state = outputs.hidden_states[-1]  # Last layer
+        
+        # Extract last token embedding for each sample in batch
+        embeddings = []
+        for i in range(hidden_state.shape[0] if hidden_state.dim() == 3 else hidden_state.shape[1]):
+            if hidden_state.dim() == 4:
+                # [num_layers, batch, seq_len, hidden_dim]
+                last_token = hidden_state[-1, i, -1, :]
+            elif hidden_state.dim() == 3:
+                # [batch, seq_len, hidden_dim]
+                last_token = hidden_state[i, -1, :]
+            else:
+                raise ValueError(f"Unexpected hidden_state shape: {hidden_state.shape}")
+            
+            # Ensure 1D
+            while last_token.dim() > 1:
+                last_token = last_token.squeeze(0)
+            
+            embeddings.append(last_token)
+        
+        return embeddings
+    
     def extract_p_h_vectors(self, user_input: str, image: Optional[Image.Image] = None, 
                            audio: Optional[str] = None) -> tuple:
         """
         Extract P and H vectors through intentional interpretation.
         
-        CRITICAL PRINCIPLE: The model experiences the SAME holistic input (text + image + audio)
-        through different cognitive lenses. We do NOT dissect the input.
-        
-        Key: Model generates actual interpretative responses,
+        The model experiences the SAME holistic input (text + image + audio)
+        through different cognitive lenses. Model generates actual interpretative responses,
         THEN we extract embeddings from those responses.
         
         Args:
@@ -224,8 +339,7 @@ class CoherenceFramework:
         Returns: p_vector, h_vector, perception_vector, p_interpretation, h_interpretation, perception_text
         """
         
-        # P: Physical/Objective interpretation
-        # The model sees the ACTUAL input (text + image + audio) through this lens
+        # Build the three prompts
         p_prompt = f"""Look at this input through the lens of a physicist or objective observer.
 Focus ONLY on measurable, verifiable, physical properties.
 Ignore all emotional content, cultural meaning, or subjective interpretation.
@@ -234,15 +348,6 @@ Input: {user_input}
 
 Describe what you observe from this purely physical perspective:"""
         
-        print("\n[Generating P interpretation...]")
-        p_interpretation = self.generate_interpretation(p_prompt, image=image, audio=audio, max_tokens=100)
-        print(f"P: {p_interpretation[:100]}...")
-        
-        p_vector = self.get_embedding_from_text(p_interpretation)
-        print(f"[DEBUG] P vector shape: {p_vector.shape}")
-        
-        # H: Human/Subjective interpretation
-        # The model sees the SAME holistic input through this lens
         h_prompt = f"""Look at this input through the lens of a human experiencing emotion and meaning.
 Focus ONLY on feelings, cultural significance, subjective experience.
 Ignore all objective measurements or physical properties.
@@ -251,18 +356,35 @@ Input: {user_input}
 
 Describe what you experience from this purely human perspective:"""
         
-        print("\n[Generating H interpretation...]")
-        h_interpretation = self.generate_interpretation(h_prompt, image=image, audio=audio, max_tokens=100)
-        print(f"H: {h_interpretation[:100]}...")
+        # Default perception uses the raw user input
+        default_prompt = user_input
         
-        h_vector = self.get_embedding_from_text(h_interpretation)
+        # BATCHED GENERATION: All 3 interpretations in ONE forward pass
+        print("\n[Generating P, H, and default interpretations in parallel...]")
+        prompts = [p_prompt, h_prompt, default_prompt]
+        interpretations = self.generate_batch_interpretations(prompts, image=image, audio=audio, max_tokens=50)
+        
+        p_interpretation = interpretations[0]
+        h_interpretation = interpretations[1]
+        perception_text = interpretations[2]
+        
+        print(f"\n[P Interpretation]:")
+        print(p_interpretation)
+        print(f"\n[H Interpretation]:")
+        print(h_interpretation)
+        print(f"\n[Default Perception]:")
+        print(perception_text)
+        
+        # BATCHED EMBEDDING EXTRACTION: All 3 embeddings in ONE forward pass
+        print("\n[Extracting embeddings in parallel...]")
+        embeddings = self.get_batch_embeddings([p_interpretation, h_interpretation, perception_text])
+        
+        p_vector = embeddings[0]
+        h_vector = embeddings[1]
+        perception_vector = embeddings[2]
+        
+        print(f"[DEBUG] P vector shape: {p_vector.shape}")
         print(f"[DEBUG] H vector shape: {h_vector.shape}")
-        
-        # Default perception (unfiltered)
-        # The model experiences the holistic input with no lens
-        print("\n[Generating default perception...]")
-        perception_text = self.generate_interpretation(user_input, image=image, audio=audio, max_tokens=100)
-        perception_vector = self.get_embedding_from_text(perception_text)
         print(f"[DEBUG] Perception vector shape: {perception_vector.shape}")
         
         return p_vector, h_vector, perception_vector, p_interpretation, h_interpretation, perception_text
@@ -287,10 +409,12 @@ Describe what you experience from this purely human perspective:"""
         centroid = torch.stack(vertices).mean(dim=0)
         
         # Measure dissonance (distance from perception to centroid)
-        dissonance = (1.0 - F.cosine_similarity(
+        cos_sim = F.cosine_similarity(
             perception_vector.unsqueeze(0),
             centroid.unsqueeze(0)
-        )).item()
+        ).item()
+        # Normalize cosine similarity to [0,1] for consistency
+        dissonance = (1.0 - cos_sim) / 2.0
         
         # Calculate barycentric coordinates (influences)
         distances = {
@@ -354,8 +478,11 @@ Describe what you experience from this purely human perspective:"""
         # --- Step 3: Generate Final Response ---
         # Generate the response before logging so it can be included in the memory
         final_response = self.generate_response(user_input, image, audio)
-        print(f"\n[Model Response]")
+        print(f"\n{'='*80}")
+        print(f"[MODEL'S FINAL RESPONSE]")
+        print(f"{'='*80}")
         print(final_response)
+        print(f"{'='*80}")
         
         # --- Step 4: Assemble the Full Cognitive Chronicle ---
         cognitive_event = {
@@ -413,18 +540,22 @@ Describe what you experience from this purely human perspective:"""
         
         # Use inference_mode for faster generation
         with torch.inference_mode():
-            generation = self.model.generate(**inputs, max_new_tokens=200, do_sample=True, temperature=0.7)
+            generation = self.model.generate(
+                **inputs, 
+                max_new_tokens=200, 
+                do_sample=True, 
+                temperature=0.7,
+                use_cache=True  # Enable KV cache
+            )
             generation = generation[0][input_len:]
         
         response = self.processor.decode(generation, skip_special_tokens=True)
         return response
 
 if __name__ == "__main__":
-    # Example usage - uses your local model
-    MODEL_PATH = r"C:\Users\carso\Desktop\modelspace\gemma-3n-E4B-it"
-    
+    # Example usage - loads config from config.json
     print("Initializing Coherence Framework...")
-    framework = CoherenceFramework(MODEL_PATH)
+    framework = CoherenceFramework(config_path="config.json")
     
     # Test inputs
     test_inputs = [
