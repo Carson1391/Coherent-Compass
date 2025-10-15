@@ -11,7 +11,7 @@ import warnings
 import json
 
 # Import the core logic from the other scripts
-from coherent_self import CoherenceFramework
+from coherent_compass import CoherenceFramework
 from causal_ledger import CausalLedger
 
 # Suppress some common warnings
