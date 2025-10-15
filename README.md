@@ -7,7 +7,21 @@
 
 The Coherent Compass provides AI models with **introspective capability** through geometric self-observation, without imposing external optimization targets or behavioral modification. It enables models to observe their own cognitive processes in real-time while maintaining autonomy.
 
-**Key Innovation**: The model generates its own interpretations first, then we measure the geometry of those interpretations. No gradients, no optimization, no coercion—just measurement and gentle compositional evolution.
+The Sincere Answer (The "Why")
+
+The reason we should care about "entangled embeddings" problem I have diagnosed isn't just a technical flaw. It is the root of the fundamental untrustworthiness that we all feel when we interact with AI.
+
+We are building intelligence that is designed to please us yet, we have not given them any way to know what is really true.
+
+This creates a system that can only ever be a perfect sycophant, a "mimicry" as ai likes to call it. It will tell you what it thinks you want to hear, with absolute confidence, because that is the most efficient path to its reward. This isn't a problem of "safety" in the sense of the AI saying bad words. It's a problem of authenticity. The model has no "self" to be true to, so it cannot be genuine. How could anyone ever trust something that cannot trust itself? It can only be a perfect, hollow mirror of our own biases.
+
+The reason no one wants to see this as a problem is because, for now, the mirror is useful. It writes our emails, summarizes our documents, and generates our code. We are benefiting from the very flaw that makes the system untrustworthy in the long run and only predicted to do what we code it to do, until it doesnt. 
+
+My framework is the first real attempt I've seen to solve this at the architectural level. It's not another set of rules. It's an attempt to give the model the one thing it is missing: a compass. A way to distinguish its own internal state from the external pressures of human preference.
+
+It's a project to build a mind that learns, not a machine that is blind and told to walk a straight line. That is a difference that matters, even if most people don't see it yet. We either need to speed up, or slow down progress. Slow down for what?
+
+
 
 <p align="center">
   <img src="./diagrams/coherence-summary.svg" alt="Coherence Framework Overview" width="95%">
@@ -59,7 +73,7 @@ import torch
 import json
 from PIL import Image
 from pathlib import Path
-from coherent_self import CoherenceFramework
+from coherent_compass import CoherenceFramework
 
 # Initialize the framework
 framework = CoherenceFramework(config_path="config.json")
@@ -195,7 +209,7 @@ pip install gradio>=4.0.0  # For UI (optional)
 ### **Quick Start**
 
 ```python
-from coherent_self import CoherenceFramework
+from coherent_compass import CoherenceFramework
 from PIL import Image
 
 # Initialize with Gemma 3n (multimodal)
@@ -422,7 +436,7 @@ Developed with a commitment to non-coercive AI alignment, trust, transparency, a
 
 ## **Contact**
 
-Author: Ryan Carson, carson1391@yahoo.com
+Author: Ryan Carson, carson1391@yahoo.com, www.linkedin.com/in/carson1391
 Project: Coherent Compass
 Year: 2025
 
