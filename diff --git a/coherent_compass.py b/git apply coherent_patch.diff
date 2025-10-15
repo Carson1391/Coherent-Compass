@@ -1,0 +1,79 @@
+diff --git a/coherent_compass.py b/coherent_compass.py
+index e9b1e11..3a7b04f 100644
+--- a/coherent_compass.py
++++ b/coherent_compass.py
+@@ -379,7 +379,9 @@ class CoherenceFramework:
+         # Measure dissonance (distance from perception to centroid)
+-        dissonance = (1.0 - F.cosine_similarity(
+-            perception_vector.unsqueeze(0),
+-            centroid.unsqueeze(0)
+-        )).item()
+-
+-        # Calculate barycentric coordinates (influences)
++        cos_sim = F.cosine_similarity(
++            perception_vector.unsqueeze(0),
++            centroid.unsqueeze(0)
++        ).item()
++        # Normalize to [0,1] range
++        dissonance = (1.0 - cos_sim) / 2.0
++
++        # Calculate barycentric coordinates (influences)
+         distances = {
+             'physical': torch.norm(perception_vector - p_vector).item(),
+             'human': torch.norm(perception_vector - h_vector).item(),
+@@ -480,7 +482,9 @@ class CoherenceFramework:
+         # --- Step 4: Assemble the Full Cognitive Chronicle ---
+         cognitive_event = {
+-            's_vector_at_event': json.dumps(measurement['S'].cpu().numpy().tolist()),
++            # Store compact S-vector preview instead of full tensor for lightweight ledger
++            's_vector_at_event': json.dumps(measurement['S'].cpu().numpy().tolist()[:16]),
+             'input_text': user_input,
+             'p_interpretation': p_interp,
+             'h_interpretation': h_interp,
+diff --git a/causal_ledger.py b/causal_ledger.py
+index 473bca1..9a6b21d 100644
+--- a/causal_ledger.py
++++ b/causal_ledger.py
+@@ -14,7 +14,9 @@ from typing import Dict, Tuple
+ 
+ # Admin secret key for archival operations
+-ADMIN_SECRET_KEY = "coherence_admin_2024"  # Change this in production
++import os
++ADMIN_SECRET_KEY = os.environ.get("COHERENCE_ADMIN_KEY", "default_admin_key")
++
+ 
+ class CausalLedger:
+     """Immutable, blockchain-style logging of the model's full cognitive history."""
+@@ -55,13 +57,11 @@ class CausalLedger:
+         # Prepare data for insertion and hashing
+-        entry_tuple_for_hashing = (
+-            timestamp,
+-            'temp_hash',
+-            previous_hash,
++        entry_tuple_for_hashing = (
++            timestamp,
++            previous_hash,
+             event_data.get('s_vector_at_event', '{}'),
+             event_data.get('input_text', ''),
+             event_data.get('p_interpretation', ''),
+             event_data.get('h_interpretation', ''),
+             event_data.get('default_perception_text', ''),
+             event_data.get('final_response_text', ''),
+             event_data.get('dissonance', 0.0),
+             event_data.get('influences', '{}'),
+             status
+         )
+-
+-        current_hash = self._hash_entry(entry_tuple_for_hashing)
+-        
+-        final_entry_tuple = (
+-            timestamp,
+-            current_hash,
+-            previous_hash,
+-        ) + entry_tuple_for_hashing[3:] # Append the rest of the data
++        current_hash = self._hash_entry(entry_tuple_for_hashing)
++        final_entry_tuple = (
++            timestamp,
++            current_hash,
++            previous_hash,
++        ) + entry_tuple_for_hashing[2:]  # Append remaining fields
